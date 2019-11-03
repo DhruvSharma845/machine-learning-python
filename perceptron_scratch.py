@@ -3,52 +3,70 @@
 """
 Perceptron Algorithm
 Created on Sat Sep 21 12:56:49 2019
+Last Modified on Sun Nov 03 16:38:00 2019
 
-@author: dhruv
+@author: Dhruv
 """
+
 import numpy as np
-import pandas as pd
+
+"""
+n : number of training instances
+m : number of features
+"""
+
 
 class Perceptron(object):
-    
-    def __init__(self, learning_rate = 0.01, epochs = 50, random_state = 1):
+
+    def __init__(self, learning_rate=0.01, epochs=50, random_state=1):
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.random_state = random_state
-    
-    def predict(self, x):
-        z = np.dot(x, self.w) + self.b
-        return np.where(z >= 0.0, 1, -1)
-    
+
+        self.w = None
+        self.b = None
+        self.errors = []
+
+    """
+        method to train the model using the input data 
+        X: input features ; shape = (n x m)
+        y: input labels ; shape = (n x 1)
+    """
+
     def fit(self, X, y):
-        
-        rgen = np.random.RandomState(self.random_state)
-        self.w = rgen.normal(loc=0.0, scale=0.01,size=X.shape[1])
+
+        # initialize the weights
+        randomGenerator = np.random.RandomState(self.random_state)
+        self.w = randomGenerator.normal(loc=0.0, scale=0.01, size=X.shape[1])
         self.b = 0.0
-        
+
         for epoch in range(self.epochs):
-            
-            for x, target in zip(X, y):
-                output = self.predict(x)
-                error = target - output
+            """
+                for every epoch, iterate on each instance
+                and update the weights accordingly
+            """
+            errorInSingleEpoch = 0
+            for x, label in zip(X, y):
+                predictedOutput = self.predict(x)
+                error = label - predictedOutput
+
+                # update the weights by the following formula:
+                # w = w + learning_rate * (label - prediction) * x
                 dw = self.learning_rate * error
                 self.w += dw * x
                 self.b += dw
-                
 
-# Learning model on Iris Dataset
-df = pd.read_csv('https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data',header=None) 
-print(df.tail())
+                errorInSingleEpoch += int(error != 0)
 
-y = df.iloc[0:100, 4].values
-y = np.where(y == 'Iris-setosa', -1 ,1)
-X = df.iloc[0:100, [0,2]].values       
-print(X)
-print(y)
+            self.errors.append(errorInSingleEpoch)
 
+        return self.errors
 
-ppn_clf = Perceptron(learning_rate = 0.1, epochs = 10)
-ppn_clf.fit(X, y)
+    """
+        method to calculate the predicted target 
+        from the input instance
+    """
 
-#Testing
-print(ppn_clf.predict([5.7, 4.1]))
+    def predict(self, x):
+        z = np.dot(x, self.w) + self.b
+        return np.where(z >= 0.0, 1, -1)
